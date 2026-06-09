@@ -1,6 +1,6 @@
 # OPERATE — turn one flaw into one durable, tracked change
 
-The daily loop: **gather → capture → route → edit → verify → commit → record.** The human spots the flaw; this loop makes the fix land in the right place, generalize, and stay revertible.
+The daily loop: **gather → capture → route → edit → verify → approve → commit → record → rerun-decision.** The human spots the flaw; this loop makes the fix land in the right place, generalize, and stay revertible — with the human gating the change in (approve) and gating whether to re-validate it (rerun).
 
 ## 0. Gather the full context (evidence first — law 1)
 Read these *together* before touching anything:
@@ -35,7 +35,10 @@ Do **not** write a deterministic test. Write a short **verification intent**: wh
 - **Visual / artifact-dominant outputs:** the human is the eye. Say so plainly — verification is "the next lesson's human review confirms X no longer happens," not a model self-grade.
 - Keep it general: "the composer applies <rule> wherever <condition>," not "frame 412 shows Y."
 
-## 5. Commit — one atomic, revertible change (P2 / law 7)
+## 5. Approve — get the human's yes BEFORE it lands (law 3)
+Present the concrete diff/plan to the human and wait for explicit approval **before committing** — this gate is *before* the change, distinct from step 4's post-hoc intent. **Structural changes always require it** (a new skill/doc, a new wave, reordered waves, or a changed subagent/node contract); a spec edit inside an existing skill may not. Atomic-revertibility is not a substitute — easy revert is not the same as a yes. If the human adjusts, fold it in and re-present; only a clear yes advances.
+
+## 6. Commit — one atomic, revertible change (P2 / law 7)
 One lesson = one commit:
 ```
 skillsys(<owner>): <imperative rule, one line>
@@ -46,5 +49,8 @@ verify: <the next-session intent from step 4>
 ```
 `<owner>` is the map id you edited (a skill, the workflow, a doc, the registry). Keep skill-system edits **out of product commits** so they stay filterable and revertible.
 
-## 6. Record — let the map get more certain
-Append one line to the map's **Diagnostics log**: `<date> — <owner> — <rule> (skillsys <sha>)`. Over many runs this is what sharpens responsibilities, makes repeat-flaws visible, and lets the next diagnosis start ahead. Review any span with `scripts/review-edits.sh`.
+## 7. Record — let the map get more certain (PRODUCT-QUALITY edits only)
+The Diagnostics log is the **product-quality ledger of the artifact-production flow** — it records ONLY edits to the skills/workflow that change what the pipeline *produces* (a skill improvement, a workflow/chain fix, a new skill or capability). For each such edit append one line: `<date> — <owner> — <rule> (skillsys <sha>)`. **Do NOT log** edits to the stewardship *process* itself (method/procedure/systematic changes — e.g. editing this OPERATE loop) or edits that live in another repo; `git log` / `scripts/review-edits.sh` is their record. The map stays anchored to product quality. Over many runs the ledger sharpens responsibilities, makes repeat-flaws visible, and lets the next diagnosis start ahead.
+
+## 8. Rerun-decision — re-validate WITH the human (law 3)
+After committing, decide *with the human* whether to rerun the workflow — both to validate this change on a real run and because a skill-system edit can **stale prior verifications** (an earlier rule's "next run confirms X" may need re-confirming under the new edit). Verification is confirmed only by a real run + the human's eye, never assumed. The human owns this call; surface it explicitly — don't skip it.
