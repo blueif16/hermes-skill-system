@@ -64,9 +64,50 @@ runs, when bootstrapping the convention into a repo, or when reviewing/consolida
 | `references/operate.md` | OPERATE: the capture → route → edit → verify → commit loop. |
 | `references/consolidate.md` | CONSOLIDATE: merge drift into the canonical owner. |
 | `scripts/review-edits.sh` | Lists every `skillsys(...)` commit in a span, grouped, with its why-line — the periodic review. |
+| `references/hermes-agent-research-2026-06-08.md` | The full multi-source research brief on Hermes Agent — the provenance for every law (see below). |
 
 The per-repo map (`<repo>/.agents/skill-system-map.md`) is **data** that lives in each consuming
 repo; this repo is the portable **method**.
+
+## Provenance — the Hermes research & how we extracted this
+
+This skill is a deliberate adaptation of **Nous Research's "Hermes Agent"** — the self-improving agent
+whose differentiator is a closed loop that writes, prunes, and *offline-evolves* its own `SKILL.md`
+files. On **2026-06-08** we ran a multi-source study of it and distilled the laws above. The full
+record — verbatim mechanisms, exact thresholds, ready-to-paste scaffolds, a practitioner reality-check,
+and a practice→source table — lives in
+[`references/hermes-agent-research-2026-06-08.md`](references/hermes-agent-research-2026-06-08.md).
+Read it when deciding whether a proposed change to *this method* is sound.
+
+**Sources (multi-source fan-out).** The Hermes docs + GitHub repos (`hermes-agent`,
+`hermes-agent-self-evolution`) + the GEPA paper (ICLR 2026) `[web/Exa]`; 14 curated creator
+walkthroughs ingested into a local transcript RAG — Akshay Pachaar, NVIDIA Developer, NetworkChuck,
+Weaviate "GEPA Explained", SkillOpt, Google Antigravity, DSPy/GEPA `[YouTube]`; and practitioner
+reports across r/AI_Agents, r/LocalLLaMA, r/AgentsOfAI, r/LLMDevs `[Reddit]`.
+
+**What Hermes does (the subject we mined).** Skills = procedural memory under `~/.hermes/skills/`,
+loaded by *progressive disclosure* (only name+description at session start, full body on match); a
+`skill_manage` CRUD tool (prefer `patch`); a background **Curator** (stale→archive→umbrella-consolidate,
+never deletes, snapshots first); **GEPA** offline trace-driven evolution, gated on tests/size/semantics
+and shipped as PRs not commits; a memory-vs-skills split (facts vs procedures); and "no silent
+learning" (the agent proposes, the human approves).
+
+**What we KEPT.** Progressive disclosure · patch > edit > new-skill · one-canonical-home / no
+duplication · "benchmarks are gates, not fitness" · no silent learning (propose→approve→commit) ·
+git-revert as the archive.
+
+**What we deliberately DROPPED — and why.** This is the ledger for future iteration:
+
+| Hermes mechanism | We dropped it because | What we do instead |
+| --- | --- | --- |
+| 30/90-day Curator timers + idle daemon | we iterate at dev speed | fix the moment a flaw is spotted; consolidate on demand |
+| agent-vs-user provenance split | every edit here is human-approved | one human-reviewed `skillsys()` commit per lesson |
+| reward-hackable auto-tests | LLM-written tests are untrustworthy | **verify by intent** for the next session; human is the eye for visuals |
+| precedence *scores* in the map | one orchestrated system — everything is needed, ranking is meaningless | the single formal rule "fix the chain over a single skill"; map keeps notes, no scores |
+| GEPA-style *model* judging of visual artifacts | the model can't be trusted on visuals | human eye for visuals; a model+human judge loop is a **future extension**, scoped to verbal/plan phases only |
+
+When revisiting a law, check it against the brief to see whether it's a Hermes principle we adopted, an
+inversion we chose for velocity, or something still open (the deferred verbal/plan judge loop).
 
 ## License
 

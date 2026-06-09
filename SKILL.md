@@ -47,3 +47,6 @@ This skill system is **not a pile of skills**; it's a workflow that orchestrates
 ## Tooling
 - `scripts/review-edits.sh [since] [until]` — every `skillsys(...)` commit in a span, grouped, with its why-line. This is the periodic review.
 - The per-repo map lives at `<repo>/.agents/skill-system-map.md` (data); this skill is the method (portable across repos).
+
+## Provenance — why this design
+Every law here traces to a multi-source study of Nous Research's **Hermes Agent** (the self-improving agent that writes/prunes/evolves its own SKILL.md files): `references/hermes-agent-research-2026-06-08.md`. That brief is the full record — what we **kept** (progressive disclosure, patch>edit>new, one-canonical-home, benchmarks-as-gates, no-silent-learning) and what we **deliberately dropped** for a high-velocity, human-in-the-loop shop (the 30/90-day Curator timers, autonomous provenance splits, reward-hackable auto-tests, GEPA-style model judging of visual artifacts). Read it when deciding whether a proposed change to *this method* is sound.
