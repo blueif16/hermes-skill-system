@@ -4,10 +4,14 @@ The concrete protocol for OPERATE's **verify** (step 4) and **rerun-decision** (
 
 It **composes** OPERATE; it does not replace it. Steps 1–7 of OPERATE are unchanged — this file only makes steps 0 / 4 / 8 concrete for an executor-produced system.
 
-## The division of labor (non-negotiable)
-- **The executor PRODUCES.** The cheap production model (run via the driver) regenerates the node's artifact. It never judges quality and never edits a skill.
-- **The steward (the capable model + the human) JUDGES and EDITS.** Reading evidence, judging against the fixture, finding the root cause, and writing the skill edit are the steward's job — never delegated to the executor.
-- Validating on the EXECUTOR's model (not the steward's stronger model) is deliberate: a too-strong judge could produce a good artifact *despite* a vague skill, masking the flaw. The executor's honest output is the test of whether the SKILL ITSELF carries the craft.
+## The three roles — the main loop ONLY orchestrates
+- **The executor PRODUCES.** The cheap production model (run via the driver) regenerates the node's artifact. Never judges, never edits.
+- **Worker subagents (the capable model) DO THE WORK** — spawned per step, each a clean-room agent:
+  - a **DIAGNOSIS** subagent: gathers the 3-tier evidence + artifact + upstream, judges against the node's fixture entry, names the EXACT flawed decision, routes to the canonical owner skill(s), and returns a concrete proposal — the skill diff (file + old→new), the `skillsys(<owner>)` commit message (why/lesson/verify), and the diagnostics line. (OPERATE steps 0–4 run INSIDE it.) It reads the fixture (it is a steward, not a producing node).
+  - an **APPLY** subagent: applies the human-approved diff and commits (skillsys + diagnostics line; child-commit for the self-referential sha).
+  - an **INDEPENDENT-JUDGE** subagent: fresh, sees ONLY the regenerated artifact + fixture entry + upstream — never the diagnosis — and returns PASS / PASS-WITH-NITS / FAIL.
+- **The orchestrator (main loop) ONLY CONTROLS FLOW.** It spawns the worker subagents, triggers the executor re-run, runs the two HITL gates, fires the commit, records status, and advances node-to-node. **It never reads evidence, judges, diagnoses, or writes/applies edits in its own context** — it writes plans and spawns prompts (the `/cm` orchestrator discipline), keeping the main loop a clean controller able to drive the whole sweep.
+- Validating on the EXECUTOR's model (not a worker subagent's stronger model) is deliberate: a too-strong producer could mask a vague skill. The executor's honest output is the test of whether the SKILL ITSELF carries the craft.
 
 ## The laws of the loop
 1. **One node at a time. The human is the eye.** Never sweep many nodes before a human looks.
@@ -16,14 +20,15 @@ It **composes** OPERATE; it does not replace it. Steps 1–7 of OPERATE are unch
 4. **An independent judge.** Judge the regenerated artifact with a FRESH agent that sees ONLY the artifact + the fixture entry + the upstream it must be faithful to — never the diff or the reasoning behind the fix, so it cannot grade to the fix.
 5. **A blind gate is never trusted.** If a verification node in the pipeline cannot see the failure mode (e.g. it can't view pixels and rubber-stamps from JSON), do not run or rely on it during the sweep — the human + the independent judge are the eye.
 
-## The loop (per node)
-0. **Gather 3-tier evidence** (OPERATE step 0): the node's structured return + its tier-2 process log + its tier-3 raw transcript + the artifact + the upstream it consumed. Name the EXACT decision in the log/transcript that produced the flaw — never infer "model too weak / node too hard" from a counter.
-1–3. **Capture → route → edit** (OPERATE 1–3): route the flaw to its canonical owner skill(s); make the smallest durable, generalizing edit; update the node's criteria-fixture entry if the definition of *good* changed.
-4. **Approve** (OPERATE 5): show the concrete diff, get the human's yes.
-5. **Commit** (OPERATE 6–7): one `skillsys(<owner>)` commit (why/lesson/verify body) + a product-quality diagnostics line in the map. (Self-referential sha caveat: a commit cannot embed its own sha via amend — that orphans the commit the line names; fill the sha in a small child commit so the reference resolves in pushed history.)
-6. **Clean-room re-run of JUST that node** on the executor, reusing all upstream from disk: start the driver at the node's entry phase and stop after the node. Back up the bad-run artifact first (`<artifact>.PRE-<NODE>FIX`). The node reads the *edited* skill (nodes load skills by path) → a true test of the edit. Run with debug on + escalation OFF, so the result is the executor's honest output, not a fallback model's.
-7. **Independent judge** (law 4) → PASS / PASS-WITH-NITS / FAIL against the fixture; the steward cross-checks.
-8. **Decide WITH the human** (OPERATE 8): accept & advance, or refine. Record the outcome — and any *parked* item to revisit — in the map's status ledger.
+## The loop (per node) — the orchestrator drives, subagents do the work
+0. **Orchestrator spawns the DIAGNOSIS subagent.** It does OPERATE 0–4 inside: gather the 3-tier evidence (structured return + tier-2 process log + tier-3 raw transcript) + the artifact + the upstream it consumed; name the EXACT decision that produced the flaw (never "model too weak" from a counter); judge against the node's fixture entry; route to the canonical owner skill(s); make the smallest durable, *generalizing* proposal; update the node's fixture entry if the definition of *good* changed. It RETURNS the diff + commit message + diagnostics line — it does not commit.
+1. **Gate 1 — approve (human).** The orchestrator presents the proposed diff; the human says yes / adjust / no. Structural changes always gate here.
+2. **Orchestrator spawns the APPLY subagent.** On approval it applies the exact diff and commits one `skillsys(<owner>)` change + the product-quality diagnostics line, filling the self-referential sha in a child commit (an amend orphans the very commit the line names).
+3. **Orchestrator triggers the executor re-run** of JUST that node, reusing upstream from disk (start the driver at the node's entry phase, stop after it; back up the bad-run artifact first as `<artifact>.PRE-<NODE>FIX`; debug on, escalation OFF). The node reads the *edited* skill by path → a true test.
+4. **Orchestrator spawns the INDEPENDENT-JUDGE subagent** (fresh; sees ONLY the regenerated artifact + fixture entry + upstream, never the diagnosis) → PASS / PASS-WITH-NITS / FAIL.
+5. **Gate 2 — decide (human).** The orchestrator presents the verdict; the human accepts & advances or asks to refine. The orchestrator records the outcome + any *parked* item in the map's status ledger, then advances to the next node.
+
+The orchestrator performs the gates (1, 5), the executor trigger (3), and the spawns (0, 2, 4) — and nothing else. It never reads-and-judges or drafts/applies edits in its own context.
 
 ## Single-node re-run vs the full suffix
 OPERATE step 8 runs the whole downstream closure of the first changed node — that is the **end-to-end re-validation**, done once when the human calls it (typically at the end of a sweep, or after an early-node edit). To merely **judge whether one node's skill edit fixed that node's artifact**, you re-run only that single node (a degenerate suffix stopped at the changed node). So: harden the pipeline by sweeping node-by-node with single-node re-runs; then one full run from the top is the closing validation that nothing downstream re-broke. Reuse every unchanged upstream artifact untouched — never regenerate or re-judge what the edit didn't alter.
