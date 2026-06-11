@@ -42,7 +42,7 @@ This skill system is **not a pile of skills**; it's a workflow that orchestrates
 
 ## The two procedures
 - **INIT / refresh the map** → `references/init.md`. Run once per repo and whenever the system's shape changes (new node, new skill, re-wired orchestrator). INIT also **injects the ambient stewardship hook into the project's CLAUDE.md/AGENTS.md** and installs the `skillsys(...)` commit convention — so the project stays aware of the pattern and user feedback auto-triggers it.
-- **OPERATE — the daily loop** → `references/operate.md`: capture → route → edit → verify → approve → commit → record → rerun-decision (the human approves the change before it lands and decides whether to rerun to re-validate after).
+- **OPERATE — the daily loop** → `references/operate.md`: capture → route → edit → verify → approve → commit → record → rerun-decision (the human approves the change before it lands and decides whether to rerun to re-validate after). When the system's artifacts are produced by a `transform-workflow-to-pi`-style executor, **`references/node-validation-loop.md`** is the concrete clean-room single-node re-run + independent-judge protocol for OPERATE's verify + rerun-decision steps (the executor PRODUCES, the steward JUDGES + EDITS; one node at a time; never inject the fixture).
 - **CONSOLIDATE — on demand** → `references/consolidate.md`: merge duplicated/conflicting guidance into the canonical owner; keep skills inside their disclosure budget.
 
 ## Tooling
