@@ -85,6 +85,30 @@ input/schema/registry file it reads + auto-injected context. Simulate exactly wh
   detail) → hand to a fresh-context sub-agent or the human. Box each hypothesis (a re-run count / a
   clock); sunk cost is sunk.
 
+## Fan-out SOP — how many agents to spawn
+The main flow runs in companion mode (the orchestrator + human ARE the verifier). When a bug surfaces —
+you spot it, the human reports it, or a stage's artifact misses its criteria — spawn diagnosis agent(s)
+by this rule (each loads + follows THIS skill):
+- **Default: ONE diagnosis agent per distinct SYMPTOM** (a different observable failure on a different
+  surface). Count symptoms cheaply via the map's symptom→owner routing; one agent each — usually one.
+- **Each agent runs the WHOLE loop solo.** It owns the root-vs-contributor judgment over the *entire*
+  trace. NEVER pre-split one symptom's candidate causes across agents ("a template agent + a CLAUDE.md
+  agent") — that fragments the one coherent picture, multiplies anchoring (M0) since each confirms its
+  assigned area, and re-reads the shared trace N×. Diagnosis is sequential discovery, not parallel
+  coverage: you can't fan out finding a root cause you haven't found yet.
+- **Fan out PARALLEL research children only at the research-pass tier**, and only for sub-questions the
+  agent has CONFIRMED independent + deep (disjoint, each a real design choice). Cheap checks
+  (`grep`/`ls`/one re-run) never fan out. (Worked: the Harden diagnosis spawned ONE Exa research child
+  for {pi write-gate? · CLAUDE.md suppression? · template-fill sound?} — proven-independent questions.)
+- **REPORT UP to the human instead of mega-fanning-out** when: 3-strike (no surviving hypothesis), OR
+  it confirms multiple independent root *areas* each needing its own deep dig, OR a structural decision
+  is required. The human picks directions / authorizes a per-area sweep.
+- **The orchestrator never diagnoses in-context** — it spawns, runs the human gates, and sequences
+  APPLY (parallel applies only for write-disjoint owners).
+
+**Rule of thumb:** parallelize by independent SYMPTOM (up front, cheap to identify) and by
+confirmed-independent RESEARCH (mid-loop) — **never by a guessed CAUSE.**
+
 ## The "enough evidence to act" gate — all must hold
 1. **Reproduced** (P1), or measured nondeterministic with a rate.
 2. The surviving hypothesis came with a **disconfirming observation you sought and did NOT find** — not
