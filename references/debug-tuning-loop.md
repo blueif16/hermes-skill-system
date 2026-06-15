@@ -153,6 +153,12 @@ and a kill-timeout is in play.) Store the research result with its evidence; don
   behavior?" Fix every site that mandates it **in lockstep** (a single-site fix re-injects it).
 - A verify node never creates a key artifact (the verify-node law) — if removing a node loses an
   artifact, it's misclassified; split producer/verifier first.
+- **A SHARED/UPSTREAM-framework owner** (an engine file kept byte-identical from a template, a global
+  skill): build + VERIFY the fix in the PRODUCT locally first, then PROMOTE it upstream only after a
+  real run proves it (Hermes law 10). The local copy may diverge meanwhile; promotion re-syncs it.
+  Never author an unverified change into the shared framework, and never a patch/hack — make the
+  promoted change robust + better for ANY environment (universal default when it helps all cases;
+  env-gated option only when truly circumstance-dependent).
 
 ## Our recurring traps — the known-mistake checklist (each with the cheap check that catches it)
 - **M1 · self-report over filesystem.** Check: `ls`/`stat` the exact expected file + confirm `write`
@@ -161,9 +167,9 @@ and a kill-timeout is in play.) Store the research result with its evidence; don
 - **M2 · single-site fix for a multi-site defect.** Check: `grep <old behavior>` across SKILL + chain
   prompt + criteria fixture + schema examples *before* closing (the nv1 baked-labels — three sites in
   lockstep).
-- **M3 · treating thrash/stall as a model defect, not a spec gap.** Check: count write calls in the
-  first minutes — **0 writes at the 10-min mark = specification gap**; read the `<think>` for what it
-  hunted (the Harden stall; the val1 114-tool thrash).
+- **M3 · treating thrash/stall as a model defect, not a spec gap.** Check: count write calls early —
+  **no writes well into a run = a specification gap**; read the `<think>` for what it hunted (the Harden
+  stall; the val1 thrash run). The executor may be top-tier — cheap-to-run ≠ weak.
 - **M4 · a serial dep hidden inside a `parallel()` thunk.** Check: `extract.mjs` stage count — a
   known-serial pair shown as one `∥ parallel` stage is the bug (the p02 W3b race).
 - **M5 · a stale run record cited as live evidence.** Check: read the actual artifact on disk, not the
@@ -171,7 +177,7 @@ and a kill-timeout is in play.) Store the research result with its evidence; don
 - **M6 · a verify node as primary artifact creator.** Check: "remove this node — does the flow still
   yield every artifact?" If no, split it (the VERIFY-1 conflation).
 - **M0 · anchoring on an unverified number/assumption.** Check: does the trace show the limit/condition
-  actually bit? (the `maxTokens=16384` that was never hit.)
+  actually bit? (the config output-cap that was never hit — read off a file, assumed to bind.)
 
 ## Recording — ground evidence, not citation ceremony
 Record a finding ONLY when it rests on **ground evidence** — a specific log line, a measured
@@ -180,6 +186,10 @@ NOT *"is there a formal citation."* Keep the evidence; drop the ceremony. A find
 research result, a new recurring trap) is stored **once** at its canonical home (a `research/` record /
 this checklist / the diagnostics log) with the evidence inline — so the next session reuses it instead
 of re-deriving it, and we don't anchor on a wrong fact forever.
+**Do NOT enshrine run-specific numbers** (token counts, file sizes, durations, call counts) in a durable
+record. A measured number is live diagnostic evidence *in the moment*, not a durable fact — written into
+a skill/memory it becomes a stale anchor (the "the cap is N" trap). Record the PATTERN and the method;
+let the live trace carry the numbers.
 
 ## How this composes with the rest of Hermes
 - It is the craft INSIDE `node-validation-loop.md` step 0 (the DIAGNOSIS subagent) and OPERATE steps
@@ -192,25 +202,24 @@ of re-deriving it, and we don't anchor on a wrong fact forever.
   producing node; the oracle is immutable.
 
 ## Worked example — the V01 Harden stall (the loop, end to end)
-- **P0 FRAME (A · not runnable):** "Harden should write `out/v01/spec/blueprint.json`; instead 0
-  writes, killed mid-run." Pinned: `--only harden`, provider `minimax`/`MiniMax-M3` (from
-  `message_start`).
-- **P1 REPRODUCE:** single-node re-run on frozen W0/W1 upstream — stalls every time (3×).
-- **P2 RECONSTRUCT:** `events.jsonl` → **19 tool calls = 12 read + 7 bash, ZERO writes**; the model
-  read both governing skills (its `<think>`: *"load them first as instructed by CLAUDE.md"* — an
-  auto-injected, orchestrator-only directive leaking into an executor), read `blueprint.schema.json`
-  twice, then opened **one 170 s+ inline reasoning stream** composing the artifact as chat; `debug.log`
-  ends mid-`text_delta`, **no `message_end`, no `length`** — killed mid-stream, the 16384 cap never
-  bit (refutes the cap hypothesis).
-- **P3 ISOLATE:** core (hypothesis) = the task structure invites one giant inline pass and **nothing
-  ENFORCES the artifact-on-disk invariant**, so 170s of inline reasoning produced 0 writes before the
-  stream was killed; contributors = the CLAUDE.md leak (pulled it into orchestrator-mode — wasted reads
-  + context) and the 68KB schema-in-head (read twice). The prior fix was prompt-level ("write skeleton
-  FIRST" in SKILL §0.5) and **did not hold on the next run** — disconfirms "say it louder in the
-  prompt." OPEN, for the fix sub-agent to reproduce: was the kill premature (node-timeout vs a stall
-  watchdog vs a human stop)? i.e. would it have written eventually — diagnose, don't assume.
-- **P4 FIX (route to owners):** harness write-first gate + pre-seed a `blueprint.json` template to fill
-  (`harden-blueprint` + the driver/contract); stop the CLAUDE.md leak at its root (the directive /
-  preamble); raise the self-imposed `maxTokens` (config hygiene — separate, cheap).
-- **P5 VERIFY:** `--only harden` re-run → a non-empty `blueprint.json` lands on disk, valid against the
-  schema, with no inline-only runaway.
+- **P0 FRAME (A · not runnable):** "Harden should write `spec/blueprint.json`; instead it wrote nothing
+  and ended without the file." Pinned: `--only harden`, model confirmed from `message_start`.
+- **P1 REPRODUCE:** single-node re-run on frozen upstream — stalls every time.
+- **P2 RECONSTRUCT:** `events.jsonl` → many read/`ls` calls, **zero writes**; the model read both
+  governing skills (its `<think>`: *"load them first as instructed by CLAUDE.md"* — an auto-injected,
+  orchestrator-only directive leaking into an executor), re-read the large schema, then opened one long
+  inline reasoning stream composing the artifact as chat; `debug.log` ends mid-stream with no
+  terminating event and no length-cut — so the output cap **never bit** (refutes the cap hypothesis;
+  don't anchor on it).
+- **P3 ISOLATE:** core = the task structure invites one inline pass and **nothing ENFORCES the
+  artifact-on-disk invariant**, so the model reasons the whole artifact in chat and never writes;
+  contributors = the CLAUDE.md leak (pulled it into orchestrator-mode — wasted reads + context), the
+  large schema held in-head, and the wiring body telling it to "return the artifact object" (an
+  inline-return contradiction). The prior fix was prompt-level ("write skeleton FIRST" in the skill) and
+  **did not hold on the next run** — disconfirms "say it louder in the prompt."
+- **P4 FIX (route to owners; local-first):** a harness write-first gate that won't let the node end
+  until the required file exists (the driver/contract owner — built + verified in the product first,
+  then promoted upstream); kill the CLAUDE.md auto-load at the spawn; fix the wiring "return the object"
+  contradiction (the chain owner). A pre-seeded template to fill is a follow-up step.
+- **P5 VERIFY:** `--only harden` re-run → a non-empty, schema-valid `blueprint.json` lands on disk via
+  write/edit calls, the `<think>` no longer hunts the governing skills, clean termination.
