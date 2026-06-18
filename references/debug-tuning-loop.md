@@ -184,7 +184,8 @@ Record a finding ONLY when it rests on **ground evidence** — a specific log li
 size/count, the model's own `<think>`, or a stored research result. The bar is *"is this verified,"*
 NOT *"is there a formal citation."* Keep the evidence; drop the ceremony. A finding worth keeping (a
 research result, a new recurring trap) is stored **once** at its canonical home (a `research/` record /
-this checklist / the diagnostics log) with the evidence inline — so the next session reuses it instead
+this checklist / its `skillsys(<id>)` commit, with a live thread carried in the registry's open-threads
+block) with the evidence inline — so the next session reuses it instead
 of re-deriving it, and we don't anchor on a wrong fact forever.
 **Do NOT enshrine run-specific numbers** (token counts, file sizes, durations, call counts) in a durable
 record. A measured number is live diagnostic evidence *in the moment*, not a durable fact — written into
