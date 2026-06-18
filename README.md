@@ -7,24 +7,28 @@ generalize across all future runs, and stay trackable as one atomic, revertible 
 
 > Informed by Nous Research's "Hermes Agent" research (2026-06-08).
 
-## The model — one orchestrated system, mapped completely
+## The model — a registry of tracked systems, each mapped completely
 
-A skill system is **not a pile of skills**; it's a workflow that orchestrates skills. A central
+A project may steward **many** skill systems. They're indexed in a per-project **registry**
+(`<repo>/.agents/tracked-systems.md`) — one lean row each: what it does, pointers to its map /
+criteria / judge, its git iteration-log pointer, and a tiny open-threads block. The iteration log is
+**git** (`skillsys(<id>)` commits) — the registry points at it, never copies it.
+
+Each tracked system is **not a pile of skills**; it's a workflow that orchestrates skills. A central
 orchestrator (e.g. `.claude/workflows/lesson-build.js`) calls each node, and each node reads part of
-the skill system. So the **map records everything** — skills, the orchestrator/workflow file(s),
+the system. So the per-system **map records everything** — skills, the orchestrator/workflow file(s),
 nodes, subagents, kits, the capability registry, the governing `CLAUDE.md`, and *which node relies on
-what*. The map is also the **diagnostic surface**: it records what is responsible for what, where each
-run's real logs + artifacts live, and a running diagnostics log of what past fixes concluded. Read
-together with the live problem, it points at the top candidate to fix. It **gets more certain with
-every run** — a stale map is the one real failure mode of this method.
+what* — and is also the **diagnostic surface** (what is responsible for what, where each run's real
+logs + artifacts live). It **gets more certain with every run** — a stale map is the one real failure
+mode of this method.
 
-## The three procedures
+## The three modes
 
-| Command | File | When |
+| Mode | File | When |
 | --- | --- | --- |
-| **INIT** — map the system | `references/init.md` | Once per repo, and whenever the system's shape changes (new node, new skill, re-wired orchestrator). Also injects the ambient stewardship hook into the project's `CLAUDE.md`/`AGENTS.md` and installs the `skillsys(...)` commit convention. |
-| **OPERATE** — the daily loop | `references/operate.md` | A flaw was spotted, a node misbehaved, or a finding recurred. capture → route → edit → verify → commit. |
-| **CONSOLIDATE** — on demand | `references/consolidate.md` | Merge duplicated/conflicting guidance into the canonical owner; keep skills inside their disclosure budget. |
+| **DEFINE** — register & map | `references/init.md` | Standing the pattern up in a repo, adding a tracked system, or when a system's shape changes. Writes the registry + each system's map/criteria, injects the ambient stewardship hook into `CLAUDE.md`/`AGENTS.md`, and installs the `skillsys(<id>)` convention. |
+| **OBSERVE** — passive status | `references/observe.md` | "What do we track, and where does each stand?" Reads the registry + git; drives no change. A surfaced flaw hands off to OPTIMIZE. |
+| **OPTIMIZE** — the daily loop | `references/operate.md` (+ `node-validation-loop.md`, `debug-tuning-loop.md`) | A flaw was spotted, a node misbehaved, or a finding recurred. capture → route → edit → verify → approve → commit → rerun-decision. `CONSOLIDATE` (`references/consolidate.md`) is its on-demand drift cleanup. |
 
 ## Install
 
@@ -50,23 +54,29 @@ runs, when bootstrapping the convention into a repo, or when reviewing/consolida
    the chain by editing the workflow/orchestrator.
 5. **One canonical home, no duplication.** Refine the rule in place; don't restate it.
 6. **Smallest durable edit.** Patch a section > add a `references/` file > create a new skill.
-7. **Every change is one atomic, revertible commit** — `skillsys(<owner>): <rule>` with
-   why/lesson/verify in the body. Record it in the map's diagnostics log.
+7. **Every change is one atomic, revertible commit** — `skillsys(<id>): <rule>` with
+   why/lesson/rejected/verify trailers. The commit IS the record: the iteration log is git, not a file.
 8. **Immediate, on demand — no timers.** Fix flaws the moment they're spotted.
 9. **Concise.** A lean system is a usable one.
+10. **Shared/upstream changes are local-first, then promoted** — build + verify a shared-component fix in
+    the product, promote upstream only after a real run proves it; never author unverified upstream.
 
 ## Contents
 
 | Path | What it is |
 | --- | --- |
-| `SKILL.md` | The skill — the model, the laws, the three procedures. |
-| `references/init.md` | INIT: build/refresh `<repo>/.agents/skill-system-map.md` and inject the ambient hook. |
-| `references/operate.md` | OPERATE: the capture → route → edit → verify → commit loop. |
-| `references/consolidate.md` | CONSOLIDATE: merge drift into the canonical owner. |
+| `SKILL.md` | The skill — the model, the laws, the three modes. |
+| `references/init.md` | DEFINE: build/refresh the registry + each system's map/criteria and inject the ambient hook. |
+| `references/observe.md` | OBSERVE: passive "what do we track, where does each stand?" read; drives no change. |
+| `references/operate.md` | OPTIMIZE: the capture → route → edit → verify → approve → commit → rerun loop. |
+| `references/node-validation-loop.md` | OPTIMIZE for executor-produced systems: clean-room single-node re-run + independent judge. |
+| `references/debug-tuning-loop.md` | The evidence-first root-cause craft inside the loop. |
+| `references/consolidate.md` | CONSOLIDATE: merge drift into the canonical owner; regenerate the open-threads block. |
 | `scripts/review-edits.sh` | Lists every `skillsys(...)` commit in a span, grouped, with its why-line — the periodic review. |
-| `references/hermes-agent-research-2026-06-08.md` | The full multi-source research brief on Hermes Agent — the provenance for every law (see below). |
+| `references/hermes-agent-research-2026-06-08.md` | The full multi-source research brief on Hermes Agent — the provenance for the laws. |
+| `research/agent-memory-without-bloat-2026-06-18.md` | The memory-design brief — git-as-log, exclusion list, capped registry, autonomy-needs-curation. |
 
-The per-repo map (`<repo>/.agents/skill-system-map.md`) is **data** that lives in each consuming
+The per-repo registry + maps (`<repo>/.agents/`) are **data** that live in each consuming
 repo; this repo is the portable **method**.
 
 ## Provenance — the Hermes research & how we extracted this
