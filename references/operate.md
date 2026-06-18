@@ -5,7 +5,7 @@ The daily loop: **gather → capture → route → edit → verify → approve �
 ## 0. Gather the full context (evidence first — law 1)
 Read these *together* before touching anything:
 - **The user-surface problem** — what the human actually saw go wrong.
-- **The map** (`<repo>/.agents/skill-system-map.md`) — current skill + workflow composition, **who is responsible for what**, and the **diagnostics log** (has this class been hit before?).
+- **The system's map** (its `.agents/` map, found via the registry `map:` pointer) — current skill + workflow composition and **who is responsible for what**. For *has this class been hit before?* read the **iteration log**: `git log --grep '^skillsys(<id>)'` (especially the **Rejected** trailer — what we already tried) + the registry's **open-threads** block.
 - **The run's real evidence** — the actual logs + artifacts the run produced. The map's observability section says where: per-node logs, run status, raw transcripts, the aggregated findings, and the product artifact itself. Diagnose from this, not from a guess about what the code "should" do.
 
 The map + the live problem, side by side, give the **top candidate** of what to fix. If the map feels stale or thin here, refresh it (INIT) first — a stale map is the main failure mode.
@@ -43,18 +43,21 @@ Present the concrete diff/plan to the human and wait for explicit approval **bef
 ## 6. Commit — one atomic, revertible change (P2 / law 7)
 One lesson = one commit:
 ```
-skillsys(<owner>): <imperative rule, one line>
+skillsys(<id>): <imperative rule, one line>
 
-why:    <trigger — run/artifact/finding + date>
-lesson: <symptom → root cause → general rule>
-verify: <the next-session intent from step 4>
+why:      <trigger — run/artifact/finding + date>
+lesson:   <symptom → root cause → general rule>
+rejected: <what you tried that did NOT work — the anti-hallucination field; omit if none>
+verify:   <the next-session intent from step 4>
 ```
-`<owner>` is the map id you edited (a skill, the workflow, a doc, the registry). Keep skill-system edits **out of product commits** so they stay filterable and revertible.
+`<id>` is the **registry id of the tracked system** you improved — the `skillsys(<id>)` scope key, so `git log --grep '^skillsys(<id>)'` returns this system's whole iteration log (for a single-skill system, `<id>` is that skill's name). Name the **specific component** edited (a skill, the workflow, a doc) in the imperative subject; the file path carries it too. The trailers ARE the record (step 7) — keep them honest. Keep skill-system edits **out of product commits** so they stay filterable and revertible.
 
-## 7. Record — let the map get more certain (PRODUCT-QUALITY edits only)
-The Diagnostics log is the **product-quality ledger of the artifact-production flow** — it records ONLY edits to the skills/workflow that change what the pipeline *produces* (a skill improvement, a workflow/chain fix, a new skill or capability). For each such edit append one line: `<date> — <owner> — <rule> (skillsys <sha>)`. **Do NOT log** edits to the stewardship *process* itself (method/procedure/systematic changes — e.g. editing this OPERATE loop) or edits that live in another repo; `git log` / `scripts/review-edits.sh` is their record. The map stays anchored to product quality. Over many runs the ledger sharpens responsibilities, makes repeat-flaws visible, and lets the next diagnosis start ahead.
+## 7. Record — git IS the record; touch open-threads only for an unresolved/recurring pattern
+The commit you just made (step 6) **is** the record: `skillsys(<id>)` with Why / Lesson / Rejected / Verify is the iteration log, queryable forever (`git log --grep '^skillsys(<id>)'`, `scripts/review-edits.sh`). Do **not** append the edit to an in-file diagnostics ledger — that duplicates what the commit already holds and is exactly the rot the registry's exclusion list forbids (`init.md`).
+
+The only standing in-file write here is **conditional**: if the lesson leaves an **unresolved or recurring** pattern worth carrying into the next session (a thread you didn't fully close, or a class that has now recurred), add/refresh **one line** in that system's **open-threads** block in the registry. A fully-absorbed lesson writes **nothing** here — it lives in git alone. Keep the block tiny; CONSOLIDATE regenerates it and drops absorbed threads. So the map gets more certain through three channels, not a ledger: **git** (the full record), **open-threads** (only what's still live), and the **criteria fixture** (step 3, the sharpened bar).
 
 ## 8. Rerun-decision — re-validate WITH the human (law 3)
-After committing, decide *with the human* whether to rerun the workflow — both to validate this change on a real run and because a skill-system edit can **stale prior verifications** (an earlier rule's "next run confirms X" may need re-confirming under the new edit). Verification is confirmed only by a real run + the human's eye, never assumed. The human owns this call; surface it explicitly — don't skip it. When you do rerun, **judge the artifacts against each touched node's acceptance criteria in the criteria fixture** (the standing file alongside the map), and **sharpen those criteria** from what the run reveals — so the rubric, like the Diagnostics log, gets more certain every run.
+After committing, decide *with the human* whether to rerun the workflow — both to validate this change on a real run and because a skill-system edit can **stale prior verifications** (an earlier rule's "next run confirms X" may need re-confirming under the new edit). Verification is confirmed only by a real run + the human's eye, never assumed. The human owns this call; surface it explicitly — don't skip it. When you do rerun, **judge the artifacts against each touched node's acceptance criteria in the criteria fixture** (the standing file alongside the map), and **sharpen those criteria** from what the run reveals — so the rubric gets more certain every run (its history is its `skillsys(<id>)` commits, not an in-file ledger).
 
 **The verification run is a SUFFIX of the pipeline, fixed by the FIRST changed node.** A validation rerun is neither a fresh full run *nor* "just the nodes I touched." What you must run is **determined by the EARLIEST node whose output the edit changes**: resume there (`--arg startAt=<that-node>`; the preflight verifies the upstream artifacts it depends on) and run forward through its **entire downstream closure** — in a mostly-linear pipeline, all the way to the final artifact, because every later node consumes an upstream one. So the run length **varies by edit and cannot be shortened past the first changed node**: a late edit (e.g. composer) reruns a short tail (compose → render → verify); an early edit (e.g. storyboard) reruns nearly the whole loop, since everything after depends on it. **Pick the start by asking "what is the first node whose behaviour my edit alters?" — never by how many nodes you touched.** Everything upstream of that node is **reused untouched**: never clear or regenerate an unchanged upstream artifact (deleting it forces a needless, credit-burning re-run), and never re-judge it ("initial design" you didn't alter — point the eye only at the delta). This first-changed-node rule is the lever that makes validation gradually cheaper as the system matures.
