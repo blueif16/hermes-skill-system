@@ -54,8 +54,11 @@ runs, when bootstrapping the convention into a repo, or when reviewing/consolida
    the chain by editing the workflow/orchestrator.
 5. **One canonical home, no duplication.** Refine the rule in place; don't restate it.
 6. **Smallest durable edit.** Patch a section > add a `references/` file > create a new skill.
-7. **Every change is one atomic, revertible commit** — `skillsys(<id>): <rule>` with
-   why/lesson/rejected/verify trailers. The commit IS the record: the iteration log is git, not a file.
+7. **`skillsys(<id>)` is the OPTIMIZE iteration log — reserve it.** One commit = one flaw-fix iterating a
+   system's *content* (markdown/skill rule, registry-item prose, criteria, or a component code-snippet) —
+   `skillsys(<id>): <rule>` + why/lesson/rejected/verify trailers; the commit IS the record (git, not a file).
+   NOT for system-architecture/structural change or infra/setup (DEFINE, tooling) — those commit
+   `feat`/`docs`/`chore`, never `skillsys`.
 8. **Immediate, on demand — no timers.** Fix flaws the moment they're spotted.
 9. **Concise.** A lean system is a usable one.
 10. **Shared/upstream changes are local-first, then promoted** — build + verify a shared-component fix in
